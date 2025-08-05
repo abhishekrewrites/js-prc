@@ -1,9 +1,12 @@
 Array.prototype.runMyFlat = function (arr) {
   const arrayToFlatten = arr || this;
+
   if (!Array.isArray(arrayToFlatten)) {
     throw new Error("not a valid entry");
   }
+
   let results = [];
+
   function flatten(arr) {
     arr.forEach((item) => {
       if (Array.isArray(item)) {
@@ -13,6 +16,7 @@ Array.prototype.runMyFlat = function (arr) {
       }
     });
   }
+
   flatten(arrayToFlatten);
   return results;
 };
