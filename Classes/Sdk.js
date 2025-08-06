@@ -1,53 +1,60 @@
 function EventsQueueSdk() {
-  this.items = [];
+  this.queue = [];
   this.count = 0;
+  this.processing = false;
 
-  this.logEvent = function (evtName) {
-    //send for processing
-
-    const newNodeId = new Date().getTime().toString();
-
-    const newNode = {
-      id: newNodeId,
-      name: evtName,
-    };
-    this.items = [...this.items, newNode];
-
-    // queue them
-
-    //doProcessing
-
-    this.doProcessing();
+  this.logEvent = function (eventName) {
+    this.queue.push({ id: Date.now().toString(), name: eventName });
+    if (!this.processing) this._processQueue();
   };
 
-  this.doProcessing = async function () {
-    if (!this.items.length) return null;
+  this._processQueue = async function () {
+    if (this.processing || !this.queue.length) return;
+    this.processing = true;
 
-    const processedItem = this.items[0];
-    this.items = this.items.slice(1);
+    const item = this.queue.shift();
 
     try {
-      this.processEvents(processedItem);
+      await this._send(item, false); // false = not a retry
       this.count++;
-    } catch (e) {}
+    } catch (err) {
+      console.log("-----------------------");
+      console.log(err.message);
+      console.log(`Retrying sending ${item.name}`);
+      console.log("-----------------------");
 
-    setTimeout(() => this.doProcessing(), 200);
+      // Retry - this should succeed
+      await this._send(item, true); // true = is a retry
+      this.count++;
+    }
+
+    this.processing = false;
+
+    if (this.queue.length) {
+      this._processQueue();
+    }
   };
 
-  this.processEvents = function (item) {
+  this._send = function (item, isRetry = false) {
     return new Promise((resolve, reject) => {
       setTimeout(() => {
-        if (this.count % 5 === 0) {
-          console.log(`Failed to send ${item.name} `);
+        // Only fail on first attempt of every 5th event
+        const shouldFail = (this.count + 1) % 5 === 0 && !isRetry;
+
+        if (shouldFail) {
           reject(new Error(`Failed to send ${item.name}`));
+        } else {
+          console.log(`Analytics sent ${item.name}`);
+          resolve();
         }
-        resolve(`Analytics sent ${item.name}`);
       }, 1000);
     });
   };
 }
+
+// Demo
 const sdk = new EventsQueueSdk();
 
-sdk.logEvent("event 1");
-sdk.logEvent("event 2");
-sdk.logEvent("event 3");
+for (let i = 1; i <= 10; i++) {
+  sdk.logEvent(`event ${i}`);
+}
