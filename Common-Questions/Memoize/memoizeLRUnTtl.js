@@ -1,23 +1,23 @@
-function memoizeWithTTl(fn, { maxSize = 100, ttl = 0 } = {}) {
+function memoize(fn, { maxSize = 100, ttl = 0 } = {}) {
   const cache = new Map();
 
-  return (...innerArgs) => {
-    const key = JSON.stringify(innerArgs);
+  return function (...args) {
+    const key = JSON.stringify(args);
     const now = Date.now();
 
     if (cache.has(key)) {
-      const { value, expiry } = cache[key];
+      const { value, expiry } = cache.get(key);
 
       if (ttl > 0 && now > expiry) {
         cache.delete(key);
       } else {
-        cache.delete(key);
+        cache.delete(key); // LRU: refresh position
         cache.set(key, { value, expiry });
         return value;
       }
     }
 
-    const result = fn.apply(...innerArgs);
+    const result = fn(...args);
     const expiry = ttl > 0 ? now + ttl : Infinity;
 
     if (cache.size >= maxSize) {
@@ -37,9 +37,15 @@ const slowAdd = (a, b) => {
 
 const memoizedAdd = memoize(slowAdd, { maxSize: 2, ttl: 3000 });
 
-memoizedAdd(1, 2); // Computes
-memoizedAdd(1, 2); // Cached
-setTimeout(() => memoizedAdd(1, 2), 4000); // Recomputes (expired)
-memoizedAdd(2, 3); // Computes
-memoizedAdd(4, 5); // Computes, LRU eviction happens
-memoizedAdd(1, 2); // Was evicted, recomputes
+console.log(memoizedAdd(1, 2)); // Computes
+console.log(memoizedAdd(1, 2)); // Cached
+
+setTimeout(() => {
+  console.log("After 4s:");
+  console.log(memoizedAdd(1, 2)); // Recomputes due to TTL
+}, 4000);
+
+console.log(memoizedAdd(2, 3)); // Computes
+console.log(memoizedAdd(4, 5)); // Computes, triggers LRU eviction
+
+console.log(memoizedAdd(1, 2)); // Recomputes because it was evicted
