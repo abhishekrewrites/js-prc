@@ -4,7 +4,7 @@ function curry(fn) {
       return fn(...args);
     } else {
       return (...next) => {
-        return fn(...args, ...args);
+        return fn(...args, ...next);
       };
     }
   };
