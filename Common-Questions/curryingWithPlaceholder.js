@@ -43,5 +43,5 @@ function add(a, b, c) {
 }
 
 const curriedSubtract = curryWithPlaceholder(add);
-console.log(curriedSubtract(_, 2, _)(10, 3)); // 10 - 2 - 3 = 5
-console.log(curriedSubtract(20)(_, 5)(3)); // 20 - 3 - 5 = 12
+console.log(curriedSubtract(_, 2, _)(10, 3)); // 10 + 2 + 3 = 15
+console.log(curriedSubtract(20)(_, 5)(3)); // 20 + 3 + 5 = 28

@@ -1,11 +1,9 @@
 function sum(...args) {
   const total = args.reduce((acc, curr) => acc + curr, 0);
-
   const chainFunction = (...innerArgs) => {
     if (innerArgs.length === 0) {
       return total;
     }
-
     const additionalSum = innerArgs.reduce((acc, curr) => acc + curr, 0);
     return sum(total + additionalSum);
   };

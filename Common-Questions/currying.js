@@ -1,10 +1,10 @@
 function curry(fn) {
-  return (...args) => {
-    if (fn.length >= args.length) {
+  return function curried(...args) {
+    if (args.length >= fn.length) {
       return fn(...args);
     } else {
       return (...next) => {
-        return fn(...args, ...next);
+        return curried(...args, ...next);
       };
     }
   };
