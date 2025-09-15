@@ -10,7 +10,7 @@ const memoizedFetch = memoize(async (url) => await fetch(url));
 function memoizeAsync(fn) {
   let cache = new Map();
   return (...innerArgs) => {
-    const key = JSON.stringify(innerArgs);
+    const key = innerArgs;
 
     if (cache.has(key)) {
       return cache[key];
