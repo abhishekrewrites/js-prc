@@ -64,3 +64,24 @@ const time3 = performance.now();
 menoizedR(10);
 const time4 = performance.now();
 console.log(time4 - time3, "memo");
+
+function mem(fn) {
+  let cache = []; // Store { args, result } pairs
+
+  function m(...args) {
+    // Find if we have a cached entry with matching args
+    const cached = cache.find((entry) => deepEqual(entry.args, args));
+
+    if (cached) {
+      return cached.result; // Cache hit
+    }
+
+    // Cache miss - compute result
+    const result = fn.apply(this, args);
+    cache.push({ args, result });
+
+    return result;
+  }
+
+  return m;
+}
