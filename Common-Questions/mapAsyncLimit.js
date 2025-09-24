@@ -20,9 +20,9 @@ At any time there will be size items at processing
 */
 
 function asyncMapLimit(arr, func, size = Infinity) {
-  if (!Array.isArray(arr) || arr.length === 0) return [];
+  if (!Array.isArray(arr) || arr.length === 0) return Promise.resolve([]);
   if (typeof func !== "function") throw new Error("Not a function");
-  if (size === Infinity || size > arr.length) return Promise.all(arr);
+  if (size === Infinity || size > arr.length) return Promise.all(arr.map(func));
 
   return new Promise((resolve, reject) => {
     const result = new Array(arr.length);
@@ -50,3 +50,11 @@ function asyncMapLimit(arr, func, size = Infinity) {
     processNext();
   });
 }
+
+const ex = [1, 2, 3, 4];
+
+function double(v) {
+  return v * 2;
+}
+
+asyncMapLimit(ex, double, 2);

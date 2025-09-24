@@ -1,76 +1,57 @@
-const RETRY_LIMIT = 3;
+function TaskManager(limit) {
+  this.limit = limit;
+  this.queue = [];
+  this.running = 0;
+  this.deadLetterQueue = [];
 
-class TaskManager {
-  constructor(limit) {
-    this.queue = [];
-    this.limit = limit;
-    this.processingCount = 0;
-  }
+  this.addTask = function (task) {
+    const newTask = {
+      id: Date.now(),
+      fn: task,
+      retry: 0,
+      maxRetry: 0,
+    };
+    this.queue.push(newTask);
+    this.runNextTask();
+  };
 
-  addTask(task) {
-    if (this.processingCount < this.limit) {
-      this.push(task);
-    } else {
-      const copy = [...this.queue];
-      copy.push(task);
-      const sortedCopy = copy.sort((a, b) => b.priority - a.priority);
-      this.queue = sortedCopy;
+  this.runNextTask = async function () {
+    if (this.running >= this.limit || this.queue.length === 0) {
+      return;
     }
-  }
 
-  async push(taskObj, retry = 0) {
-    this.processingCount++;
+    this.running++;
+    const next = this.queue.shift();
     try {
-      const result = await taskObj.task();
-      console.log(result);
+      const r = await next.fn();
+      console.log(r);
     } catch (e) {
-      if (retry < RETRY_LIMIT) {
-        this.push(taskObj, retry + 1);
+      if (next.retry < next.maxRetry) {
+        task.retries++;
+        this.queue.unshift(task);
+      } else {
+        this.deadLetterQueue.push(task);
       }
     } finally {
-      this.processingCount--;
-      if (this.queue.length > 0 && this.processingCount < this.limit) {
-        const next = this.queue.shift();
-        this.push(next);
-      }
+      this.running--;
+      this.runNextTask();
     }
-  }
+  };
 }
 
-const example = [
-  () =>
-    new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(`Resolved 1`);
-      }, 1000);
-    }),
-  () =>
-    new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(`Resolved 2`);
-      }, 2000);
-    }),
-  () =>
-    new Promise((resolve) => {
-      setTimeout(() => {
-        reject(`Resolved 3`);
-      }, 1000);
-    }),
-  () =>
-    new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(`Resolved 4`);
-      }, 5000);
-    }),
-  () =>
-    new Promise((resolve) => {
-      setTimeout(() => {
-        resolve(`Resolved 5`);
-      }, 4000);
-    }),
-];
+const createTask = (id, delay) => () => {
+  return new Promise((resolve) => {
+    console.log(`Task ${id} started`);
+    setTimeout(() => {
+      console.log(`Task ${id} finished`);
+      resolve();
+    }, delay);
+  });
+};
 
-const runner = new TaskManager(2);
-example.forEach((item) => {
-  runner.addTask(item);
-});
+const taskManager = new TaskManager(2);
+
+taskManager.addTask(createTask(1, 2000));
+taskManager.addTask(createTask(2, 1000));
+taskManager.addTask(createTask(3, 3000));
+taskManager.addTask(createTask(4, 500));
